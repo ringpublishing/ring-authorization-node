@@ -60,10 +60,23 @@ describe('RingAuthorization', function () {
                 expect(signer._prepareSignedHeaders(request.headers)).to.equal('accept;content-type;host');
             });
         });
+        describe('Correct Canonical Headers', function () {
+            it('Should correctly trim values and return lowercase names', function () {
+                const signer = new DLSigner(opt);
+                const headers = {
+                    'HEADER1': '  val1  ',
+                    'heaDer2': ' val2',
+                    'Header3': 'va l3',
+                    'header4': ''
+                };
+                const correctHeaders = 'header1:val1\nheader2:val2\nheader3:va l3\nheader4:';
+                expect(signer._prepareCanonicalHeaders(headers)).to.equal(correctHeaders);
+            });
+        });
         describe('Sign', function () {
             it('Returns correct timestamp', function () {
                 const signer = new DLSigner(opt);
-                let timestamp = moment(signer.sign(request));
+                let timestamp = moment(signer.sign(request)['X-DL-Date']);
                 expect(timestamp.isSame(new Date(), 'day')).to.equal(true);
             });
         });

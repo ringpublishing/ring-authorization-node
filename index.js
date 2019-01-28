@@ -65,8 +65,8 @@ DLSigner.prototype._prepareCanonicalHeaders = function (headers) {
         return a.toLowerCase().localeCompare(b.toLowerCase())
     });
     for (let i = 0; i < sortedHeaders.length; i++) {
-        can_header = sortedHeaders[i].replace('/ /g', "").trim().toLowerCase();
-        res += can_header + ':' + headers[sortedHeaders[i]];
+        can_header = sortedHeaders[i].replace('/ /g', "").toLowerCase();
+        res += can_header + ':' + headers[sortedHeaders[i]].trim();
         if (i !== sortedHeaders.length - 1) res += '\n';
     }
     return res;
