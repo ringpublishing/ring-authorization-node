@@ -92,7 +92,7 @@ DLSigner.prototype._prepareCanonicalQueryString = function (request) {
     if (uri.includes('?')) {
         uri = uri.split('?');
         params = uri[1];
-        params = params.split('&');
+        params = params.split('&').sort();
         let param;
         let val;
         for (let i = 0; i < params.length; i++) {

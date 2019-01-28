@@ -83,17 +83,22 @@ describe('RingAuthorization', function () {
         describe('Canonical Query String', function () {
             it('Returns correct canonical query string', function () {
                 const signer = new DLSigner(opt);
-                expect(signer._prepareCanonicalQueryString(request)).to.equal('prefix=somePrefix&marker=someMarker&max-keys=20');
+                expect(signer._prepareCanonicalQueryString(request)).to.equal('marker=someMarker&max-keys=20&prefix=somePrefix');
             });
             it('Returns correct canonical query string with encoded values', function () {
                 const signer = new DLSigner(opt);
                 request.uri = '/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20&test=t^e s';
-                expect(signer._prepareCanonicalQueryString(request)).to.equal('prefix=somePrefix&marker=someMarker&max-keys=20&test=t%5Ee%20s');
+                expect(signer._prepareCanonicalQueryString(request)).to.equal('marker=someMarker&max-keys=20&prefix=somePrefix&test=t%5Ee%20s');
             });
             it('Returns correct canonical query string with encoded values and empty value', function () {
                 const signer = new DLSigner(opt);
                 request.uri = '/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20&test=t^e s&aws';
-                expect(signer._prepareCanonicalQueryString(request)).to.equal('prefix=somePrefix&marker=someMarker&max-keys=20&test=t%5Ee%20s&aws=');
+                expect(signer._prepareCanonicalQueryString(request)).to.equal('aws=&marker=someMarker&max-keys=20&prefix=somePrefix&test=t%5Ee%20s');
+            });
+            it('Returns correct canonical query string sorted by query param', function () {
+                const signer = new DLSigner(opt);
+                request.uri = '/examplebucket?zzz=someValue&Aaaa=someValue&aaa=20&test=t^e s&aws';
+                expect(signer._prepareCanonicalQueryString(request)).to.equal('Aaaa=someValue&aaa=20&aws=&test=t%5Ee%20s&zzz=someValue');
             });
         });
         describe('Canonical Request', function () {
@@ -107,7 +112,7 @@ describe('RingAuthorization', function () {
                     signer._prepareSignedHeaders(headers), signer._hash(request.body, true, true));
                 let correctValue = 'GET\n' +
                     encodeURIComponent('/examplebucket') + '\n' +
-                    'prefix=somePrefix&marker=someMarker&max-keys=20\n' +
+                    'marker=someMarker&max-keys=20&prefix=somePrefix\n' +
                     'accept:application/json\n' +
                     'content-type:application/json\n' +
                     'host:test\n' +
