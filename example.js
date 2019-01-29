@@ -1,26 +1,26 @@
-let DLSigner = require('../ring-authorization-node').DLSigner;
+var DLSigner = require('../ring-authorization-node').DLSigner;
 
-const opt = {
+var opt = {
     service: 'pulsapi',
-    scope: 'dl1-request',
+    scope: 'dl1_request',
     solution: 'region',
     accessKeyId: 'AKID',
     secret: 'TEST'
 };
 var buffer = new Buffer([12,14,16]);
 
-const request = {
+var request = {
     "method": "GET",
     "uri": '/test?abc=aaa',
     "headers": {
         host: 'test',
         "Content-Type": 'application/json',
         "Accept": 'application/json',
-        'X-DL-Date': '20190128T155100Z'
+        'X-DL-Date': '20190129T101500Z'
     }
 };
 
-let signer = new DLSigner(opt);
+var signer = new DLSigner(opt);
 
 var sign = signer.sign(request);
 
