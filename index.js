@@ -12,8 +12,8 @@ var acceptedRequestScope = 'dl1_request';
 var DLSigner = function (options) {
     this.algorithm = options.algorithm ? options.algorithm : 'DL-HMAC-SHA256';
     this.options = options;
-    this.options['scope'] = this.options['scope'] ? this.options['scope'] : 'dl1_request';
-    this.options['solution'] = this.options['solution'] ? this.options['solution'] : 'RING';
+    this.options.scope = this.options.scope ? this.options.scope : 'dl1_request';
+    this.options.solution = this.options.solution ? this.options.solution : 'RING';
     this.hashAlg = this.algorithm.split('-').slice(-1)[0].toLowerCase();
 
     this._validate();
@@ -26,19 +26,16 @@ DLSigner.prototype._validate = function () {
     if (acceptedHashMethods.indexOf(this.hashAlg) < 0) {
         throw Error('Invalid hash method');
     }
-    if (!this.options['secretKey']) {
+    if (!this.options.secretKey) {
         throw Error('Secret key is missing!');
     }
-    if (!this.options['accessKey']) {
+    if (!this.options.accessKey) {
         throw Error('Access key ID is missing!');
     }
-    if (!this.options['solution']) {
-        throw Error('Solution in options missing!');
-    }
-    if (this.options['service'] !== acceptedService) {
+    if (this.options.service !== acceptedService) {
         throw Error('Invalid service option!')
     }
-    if (this.options['scope'] !== acceptedRequestScope) {
+    if (this.options.scope !== acceptedRequestScope) {
         throw Error('Invalid scope option!');
     }
 };
@@ -133,7 +130,7 @@ DLSigner.prototype.isNotOutdated = function (dlDate) {
 };
 
 DLSigner.prototype._getSigningKey = function (dateStamp, solution, service, request_scope) {
-    var sign = this._sign('DL' + this.options['secretKey'], dateStamp);
+    var sign = this._sign('DL' + this.options.secretKey, dateStamp);
     sign = this._sign(sign, solution);
     sign = this._sign(sign, service);
     return this._sign(sign, request_scope);
@@ -145,19 +142,19 @@ DLSigner.prototype._getCredentialString = function (dateStamp, solution, service
 };
 
 DLSigner.prototype._validateRequest = function (request, headers) {
-    if (!request['method']) {
+    if (!request.method) {
         throw Error('Method in options is missing!');
     }
-    if (!request['headers']) {
+    if (!request.headers) {
         throw Error('No headers provided!');
     }
-    if (!headers['host']) {
+    if (!headers.host) {
         throw Error('Host is missing!');
     }
     if (!headers['content-type']) {
         throw Error('Content-Type is missing!');
     }
-    if (request['body'] && !Buffer.isBuffer(request['body'])) {
+    if (request.body && !Buffer.isBuffer(request.body)) {
         throw Error('Invalid payload!');
     }
     if (!this.isNotOutdated(headers['x-dl-date'])) {
@@ -187,24 +184,24 @@ DLSigner.prototype.sign = function (request) {
     var signedHeaders = this._prepareSignedHeaders(copiedHeaders);
 
     var canonicalRequest = this._prepareCanonicalRequest(
-        request['method'], this._prepareCanonicalURI(request['uri']), this._prepareCanonicalQueryString(request),
+        request.method, this._prepareCanonicalURI(request.uri), this._prepareCanonicalQueryString(request),
         this._prepareCanonicalHeaders(copiedHeaders),
         signedHeaders, this._hash(request.body, true, true));
 
     var canonicalRequestHash = this._hash(canonicalRequest, true);
     var dateStamp = moment(copiedHeaders['x-dl-date'], 'YYYYMMDD[T]HHmmss[Z]').format('YYYYMMDD');
 
-    var credentialsString = this._getCredentialString(dateStamp, this.options['solution'],
-        this.options['service'], this.options['scope']);
+    var credentialsString = this._getCredentialString(dateStamp, this.options.solution,
+        this.options.service, this.options.scope);
 
     var stringToSign = this._prepareStringToSign(copiedHeaders['x-dl-date'], credentialsString, canonicalRequestHash);
-    var signingKey = this._getSigningKey(dateStamp, this.options['solution'],
-        this.options['service'], this.options['scope']);
+    var signingKey = this._getSigningKey(dateStamp, this.options.solution,
+        this.options.service, this.options.scope);
 
     var authorizationSignature = this._sign(signingKey, stringToSign, true);
 
     return {
-        'Authorization': this.algorithm + ' ' + 'Credential=' + this.options['accessKey'] + '/' +
+        'Authorization': this.algorithm + ' ' + 'Credential=' + this.options.accessKey + '/' +
             credentialsString + ',SignedHeaders=' + signedHeaders + ',Signature=' + authorizationSignature,
         'X-DL-Date': copiedHeaders['x-dl-date']
     };
