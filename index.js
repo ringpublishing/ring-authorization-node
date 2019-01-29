@@ -14,6 +14,7 @@ var DLSigner = function (options) {
     this.algorithm = options.algorithm ? options.algorithm : 'DL-HMAC-SHA256';
     this.options = options;
     this.options['scope'] = this.options['scope'] ? this.options['scope'] : 'dl1_request';
+    this.options['solution'] = this.options['solution'] ? this.options['solution'] : 'RING';
 
     this._validate();
     this.hashAlg = this.algorithm.split('-').slice(-1)[0].toLowerCase();
@@ -47,7 +48,7 @@ DLSigner.prototype._sign = function (key, msg, hex_output) {
     hex_output = hex_output ? hex_output : false;
     if (!msg) msg = "";
     var sign = crypto.createHmac(this.hashAlg, key);
-    sign.update(msg, "utf-8");
+    sign.update(msg, 'utf-8');
     return hex_output ? sign.digest('hex') : sign.digest();
 };
 
@@ -62,7 +63,7 @@ DLSigner.prototype._hash = function (msg, hex_output, is_payload) {
 };
 
 DLSigner.prototype._prepareStringToSign = function (timeStamp, credentialsString, req_hash) {
-    return this.algorithm + '\n' + moment(timeStamp).format('YYYYMMDD[T]HHmmss[Z]') + '\n' + credentialsString + '\n' + req_hash;
+    return this.algorithm + '\n' + moment(timeStamp, 'YYYYMMDD[T]HHmmss[Z]').format('YYYYMMDD[T]HHmmss[Z]') + '\n' + credentialsString + '\n' + req_hash;
 };
 
 DLSigner.prototype._prepareCanonicalHeaders = function (headers) {
@@ -125,10 +126,9 @@ DLSigner.prototype._prepareCanonicalRequest = function (method, canonicalUri, ca
 };
 
 DLSigner.prototype.isNotOutdated = function (dlDate) {
-    var requestDateLimit = moment().subtract(15, 'minutes');
-    return moment(dlDate).isAfter(requestDateLimit);
+    var requestDateLimit = moment().clone(dlDate).subtract(15, 'minutes');
+    return moment(dlDate, 'YYYYMMDD[T]HHmmss[Z]').isAfter(requestDateLimit);
 };
-
 
 DLSigner.prototype._getSigningKey = function (dateStamp, solution, service, request_scope) {
     var sign = this._sign('DL' + this.options['secret'], dateStamp);
@@ -171,7 +171,7 @@ DLSigner.prototype._preSign = function (request, headers) {
 DLSigner.prototype.sign = function (request) {
     var copiedHeaders = _.assign({}, request.headers);
     if (!request.headers['X-DL-Date']) {
-        copiedHeaders['X-DL-Date'] = moment(copiedHeaders['X-DL-Date']).utc().format('YYYYMMDD[T]HHmmss[Z]');
+        copiedHeaders['X-DL-Date'] = moment(copiedHeaders['X-DL-Date']).format('YYYYMMDD[T]HHmmss[Z]');
     }
     this._preSign(request, copiedHeaders);
     var signedHeaders = this._prepareSignedHeaders(copiedHeaders);
@@ -182,7 +182,7 @@ DLSigner.prototype.sign = function (request) {
         signedHeaders, this._hash(request.body, true, true));
 
     var canonicalRequestHash = this._hash(canonicalRequest, true);
-    var dateStamp = moment(copiedHeaders['X-DL-Date']).format('YYYYMMDD');
+    var dateStamp = moment(copiedHeaders['X-DL-Date'], 'YYYYMMDD[T]HHmmss[Z]').format('YYYYMMDD');
 
     var credentialsString = this._getCredentialString(dateStamp, this.options['solution'],
         this.options['service'], this.options['scope']);

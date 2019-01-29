@@ -7,7 +7,6 @@ var opt = {
     accessKeyId: 'AKID',
     secret: 'TEST'
 };
-var buffer = new Buffer([12,14,16]);
 
 var request = {
     "method": "GET",
@@ -16,12 +15,26 @@ var request = {
         host: 'test',
         "Content-Type": 'application/json',
         "Accept": 'application/json',
-        'X-DL-Date': '20190129T101500Z'
+        'X-DL-Date': '20190129T120200Z'
     }
+};
+
+var buffer = Buffer.from('test', 'utf-8');
+
+var request2 = {
+    "method": "POST",
+    "uri": '/test',
+    "headers": {
+        host: 'test',
+        "Content-Type": 'application/json',
+        "Accept": 'application/json',
+    },
+    "body": buffer
 };
 
 var signer = new DLSigner(opt);
 
-var sign = signer.sign(request);
+// var sign = signer.sign(request);
+var sign = signer.sign(request2);
 
 console.log(sign);
