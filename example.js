@@ -1,40 +1,40 @@
 var DLSigner = require('../ring-authorization-node').DLSigner;
 
-var opt = {
+var options = {
     service: 'pulsapi',
     scope: 'dl1_request',
     solution: 'region',
-    accessKeyId: 'AKID',
-    secret: 'TEST'
+    accessKey: 'AKID',
+    secretKey: 'SECRETKEY'
 };
 
 var request = {
-    "method": "GET",
-    "uri": '/test?abc=aaa',
-    "headers": {
-        host: 'test',
-        "Content-Type": 'application/json',
-        "Accept": 'application/json',
-        'X-DL-Date': '20190129T120200Z'
+    'method': 'GET',
+    'uri': '/test?abc=aaa',
+    'headers': {
+        'Host': 'test',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
     }
 };
 
-var buffer = Buffer.from('test', 'utf-8');
+var buffer = new Buffer('test');
 
 var request2 = {
-    "method": "POST",
-    "uri": '/test',
-    "headers": {
-        host: 'test',
-        "Content-Type": 'application/json',
-        "Accept": 'application/json',
+    'method': 'POST',
+    'uri': '/test',
+    'headers': {
+        'Host': 'test',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
     },
-    "body": buffer
+    'body': buffer
 };
 
-var signer = new DLSigner(opt);
+var signer = new DLSigner(options);
 
-// var sign = signer.sign(request);
-var sign = signer.sign(request2);
+var sign = signer.sign(request);
+var sign2 = signer.sign(request2);
 
 console.log(sign);
+console.log(sign2);

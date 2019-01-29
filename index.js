@@ -1,7 +1,7 @@
 var crypto = require('crypto');
 var moment = require('moment');
-var _ = require('lodash');
 
+var REQUEST_EXPIRATION_TIME = 15; // in minutes
 
 var acceptedHashMethods = ['sha224', 'sha256', 'sha384', 'sha512'];
 var acceptedMethod = 'DL-HMAC-SHA';
@@ -10,56 +10,59 @@ var acceptedRequestScope = 'dl1_request';
 
 
 var DLSigner = function (options) {
-
     this.algorithm = options.algorithm ? options.algorithm : 'DL-HMAC-SHA256';
     this.options = options;
     this.options['scope'] = this.options['scope'] ? this.options['scope'] : 'dl1_request';
     this.options['solution'] = this.options['solution'] ? this.options['solution'] : 'RING';
+    this.hashAlg = this.algorithm.split('-').slice(-1)[0].toLowerCase();
 
     this._validate();
-    this.hashAlg = this.algorithm.split('-').slice(-1)[0].toLowerCase();
 };
 
 DLSigner.prototype._validate = function () {
     if (typeof (this.algorithm) !== 'string' || !this.algorithm.indexOf(acceptedMethod) === 0) {
         throw Error('Invalid algorithm!');
     }
-    if (acceptedHashMethods.indexOf(this.algorithm.split('-').slice(-1)[0].toLowerCase()) < 0) {
+    if (acceptedHashMethods.indexOf(this.hashAlg) < 0) {
         throw Error('Invalid hash method');
     }
-    if (!this.options['secret']) {
-        throw Error("Secret access key is missing!");
+    if (!this.options['secretKey']) {
+        throw Error('Secret key is missing!');
     }
-    if (!this.options['accessKeyId']) {
-        throw Error("Access key ID is missing!");
+    if (!this.options['accessKey']) {
+        throw Error('Access key ID is missing!');
     }
     if (!this.options['solution']) {
-        throw Error("Solution in options missing!");
+        throw Error('Solution in options missing!');
     }
     if (this.options['service'] !== acceptedService) {
-        throw Error("Invalid 'service' option!");
+        throw Error('Invalid service option!')
     }
     if (this.options['scope'] !== acceptedRequestScope) {
-        throw Error("Invalid 'scope' option!");
+        throw Error('Invalid scope option!');
     }
 };
 
-DLSigner.prototype._sign = function (key, msg, hex_output) {
-    hex_output = hex_output ? hex_output : false;
-    if (!msg) msg = "";
+DLSigner.prototype._sign = function (key, msg, hexOutput) {
+    hexOutput = hexOutput ? hexOutput : false;
+    if (!msg) {
+        msg = '';
+    }
     var sign = crypto.createHmac(this.hashAlg, key);
     sign.update(msg, 'utf-8');
-    return hex_output ? sign.digest('hex') : sign.digest();
+    return hexOutput ? sign.digest('hex') : sign.digest();
 };
 
-DLSigner.prototype._hash = function (msg, hex_output, is_payload) {
-    hex_output = hex_output ? hex_output : false;
-    is_payload = is_payload ? is_payload : false;
+DLSigner.prototype._hash = function (msg, hexOutput, isPayload) {
+    hexOutput = hexOutput ? hexOutput : false;
+    isPayload = isPayload ? isPayload : false;
 
-    if (!msg) msg = "";
+    if (!msg) {
+        msg = '';
+    }
     var sign = crypto.createHash(this.hashAlg);
-    is_payload ? sign.update(msg) : sign.update(msg, 'utf-8');
-    return hex_output ? sign.digest('hex') : sign.digest();
+    isPayload ? sign.update(msg) : sign.update(msg, 'utf-8');
+    return hexOutput ? sign.digest('hex') : sign.digest();
 };
 
 DLSigner.prototype._prepareStringToSign = function (timeStamp, credentialsString, req_hash) {
@@ -69,13 +72,14 @@ DLSigner.prototype._prepareStringToSign = function (timeStamp, credentialsString
 DLSigner.prototype._prepareCanonicalHeaders = function (headers) {
     var res = '';
     var can_header;
-    var sortedHeaders = Object.keys(headers).sort(function (a, b) {
-        return a.toLowerCase().localeCompare(b.toLowerCase())
-    });
+    var sortedHeaders = Object.keys(headers).sort();
+
     for (var i = 0; i < sortedHeaders.length; i++) {
-        can_header = sortedHeaders[i].replace('/ /g', "").toLowerCase();
+        can_header = sortedHeaders[i];
         res += can_header + ':' + headers[sortedHeaders[i]].trim();
-        if (i !== sortedHeaders.length - 1) res += '\n';
+        if (i !== sortedHeaders.length - 1) {
+            res += '\n';
+        }
     }
     return res;
 };
@@ -83,11 +87,9 @@ DLSigner.prototype._prepareCanonicalHeaders = function (headers) {
 DLSigner.prototype._prepareSignedHeaders = function (headers) {
     var signedHeaders = [];
     var signedHeader;
-    var sortedHeaders = Object.keys(headers).sort(function (a, b) {
-        return a.toLowerCase().localeCompare(b.toLowerCase())
-    });
+    var sortedHeaders = Object.keys(headers).sort();
     for (var i = 0; i < sortedHeaders.length; i++) {
-        signedHeader = sortedHeaders[i].replace('/ /g', '').trim().toLowerCase();
+        signedHeader = sortedHeaders[i].trim();
         signedHeaders.push(signedHeader);
     }
     return signedHeaders.join(';');
@@ -126,12 +128,12 @@ DLSigner.prototype._prepareCanonicalRequest = function (method, canonicalUri, ca
 };
 
 DLSigner.prototype.isNotOutdated = function (dlDate) {
-    var requestDateLimit = moment().clone(dlDate).subtract(15, 'minutes');
+    var requestDateLimit = moment().clone(dlDate).subtract(REQUEST_EXPIRATION_TIME, 'minutes');
     return moment(dlDate, 'YYYYMMDD[T]HHmmss[Z]').isAfter(requestDateLimit);
 };
 
 DLSigner.prototype._getSigningKey = function (dateStamp, solution, service, request_scope) {
-    var sign = this._sign('DL' + this.options['secret'], dateStamp);
+    var sign = this._sign('DL' + this.options['secretKey'], dateStamp);
     sign = this._sign(sign, solution);
     sign = this._sign(sign, service);
     return this._sign(sign, request_scope);
@@ -142,25 +144,33 @@ DLSigner.prototype._getCredentialString = function (dateStamp, solution, service
     return credentials.join('/');
 };
 
-DLSigner.prototype._preSign = function (request, headers) {
+DLSigner.prototype._validateRequest = function (request, headers) {
     if (!request['method']) {
-        throw Error("Method in options is missing!");
+        throw Error('Method in options is missing!');
     }
     if (!request['headers']) {
-        throw Error("No headers provided!");
+        throw Error('No headers provided!');
     }
     if (!headers['host']) {
-        throw Error("Host is missing!");
+        throw Error('Host is missing!');
     }
-    if (!headers['Content-Type']) {
-        throw Error("Content-Type is missing!");
+    if (!headers['content-type']) {
+        throw Error('Content-Type is missing!');
     }
     if (request['body'] && !Buffer.isBuffer(request['body'])) {
-        throw Error("Invalid payload!");
+        throw Error('Invalid payload!');
     }
-    if (!this.isNotOutdated(headers['X-DL-Date'])) {
-        throw Error("Invalid 'X-DL-Date' header!");
+    if (!this.isNotOutdated(headers['x-dl-date'])) {
+        throw Error('Invalid X-DL-Date header!');
     }
+};
+
+DLSigner.prototype._copyHeaders = function (headers) {
+    var copiedHeaders = {};
+    for (var i in headers) {
+        copiedHeaders[i.toLowerCase()] = headers[i];
+    }
+    return copiedHeaders;
 };
 
 /**
@@ -169,11 +179,11 @@ DLSigner.prototype._preSign = function (request, headers) {
  * @returns {object} - signed request
  */
 DLSigner.prototype.sign = function (request) {
-    var copiedHeaders = _.assign({}, request.headers);
-    if (!request.headers['X-DL-Date']) {
-        copiedHeaders['X-DL-Date'] = moment(copiedHeaders['X-DL-Date']).format('YYYYMMDD[T]HHmmss[Z]');
+    var copiedHeaders = this._copyHeaders(request.headers);
+    if (!copiedHeaders['x-dl-date']) {
+        copiedHeaders['x-dl-date'] = moment().format('YYYYMMDD[T]HHmmss[Z]');
     }
-    this._preSign(request, copiedHeaders);
+    this._validateRequest(request, copiedHeaders);
     var signedHeaders = this._prepareSignedHeaders(copiedHeaders);
 
     var canonicalRequest = this._prepareCanonicalRequest(
@@ -182,22 +192,21 @@ DLSigner.prototype.sign = function (request) {
         signedHeaders, this._hash(request.body, true, true));
 
     var canonicalRequestHash = this._hash(canonicalRequest, true);
-    var dateStamp = moment(copiedHeaders['X-DL-Date'], 'YYYYMMDD[T]HHmmss[Z]').format('YYYYMMDD');
+    var dateStamp = moment(copiedHeaders['x-dl-date'], 'YYYYMMDD[T]HHmmss[Z]').format('YYYYMMDD');
 
     var credentialsString = this._getCredentialString(dateStamp, this.options['solution'],
         this.options['service'], this.options['scope']);
 
-    var stringToSign = this._prepareStringToSign(copiedHeaders['X-DL-Date'], credentialsString, canonicalRequestHash);
-
+    var stringToSign = this._prepareStringToSign(copiedHeaders['x-dl-date'], credentialsString, canonicalRequestHash);
     var signingKey = this._getSigningKey(dateStamp, this.options['solution'],
         this.options['service'], this.options['scope']);
 
     var authorizationSignature = this._sign(signingKey, stringToSign, true);
 
     return {
-        "Authorization": this.algorithm + ' ' + 'Credential=' + this.options['accessKeyId'] + '/' +
+        'Authorization': this.algorithm + ' ' + 'Credential=' + this.options['accessKey'] + '/' +
             credentialsString + ',SignedHeaders=' + signedHeaders + ',Signature=' + authorizationSignature,
-        "X-DL-Date": copiedHeaders['X-DL-Date']
+        'X-DL-Date': copiedHeaders['x-dl-date']
     };
 };
 

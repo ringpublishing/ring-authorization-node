@@ -9,21 +9,24 @@ describe('RingAuthorization', function () {
             "uri": '/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20',
             "headers": {
                 "host": 'test',
-                "Content-Type": 'application/json',
-                "Accept": 'application/json'
+                "content-type": 'application/json',
+                "accept": 'application/json'
             }
         };
         var opt = {
             service: 'pulsapi',
-            scope: 'dl1-request',
+            scope: 'dl1_request',
             solution: 'region',
-            accessKeyId: 'AKID',
-            secret: 'TEST'
+            accessKey: 'AKID',
+            secretKey: 'TEST'
         };
         describe('Invalid algorithm', function () {
             it('Should throw Error', function () {
+                var invalidOpt = {
+                    algorithm: 'TEST'
+                };
                 expect(function () {
-                    new DLSigner(opt, "TEST")
+                    new DLSigner(invalidOpt)
                 }).to.throw();
             });
         });
@@ -42,9 +45,11 @@ describe('RingAuthorization', function () {
                 expect(signer._hash('test', true)).to.equal(testHash);
             });
             it('Should return correct SHA512 of a string', function () {
+                opt.algorithm = 'DL-HMAC-SHA512';
                 const testHash = 'EE26B0DD4AF7E749AA1A8EE3C10AE9923F618980772E473F8819A5D4940E0DB27AC185F8A0E1D5F84F88BC887FD67B143732C304CC5FA9AD8E6F57F50028A8FF'.toLowerCase(); // 'test' sha256 hash
-                const signer = new DLSigner(opt, 'DL-HMAC-SHA512');
+                const signer = new DLSigner(opt);
                 expect(signer._hash('test', true)).to.equal(testHash);
+                opt.algorithm = null;
             });
         });
         describe('Correct payload hash', function () {
@@ -63,12 +68,13 @@ describe('RingAuthorization', function () {
         describe('Correct Canonical Headers', function () {
             it('Should correctly trim values and return lowercase names', function () {
                 const signer = new DLSigner(opt);
-                const headers = {
+                var headers = {
                     'HEADER1': '  val1  ',
                     'heaDer2': ' val2',
                     'Header3': 'va l3',
                     'header4': ''
                 };
+                headers = signer._copyHeaders(headers);
                 const correctHeaders = 'header1:val1\nheader2:val2\nheader3:va l3\nheader4:';
                 expect(signer._prepareCanonicalHeaders(headers)).to.equal(correctHeaders);
             });
@@ -148,8 +154,8 @@ describe('RingAuthorization', function () {
             "uri": '/examplebucket',
             "headers": {
                 "host": 'test',
-                "Content-Type": 'application/json',
-                "Accept": 'application/json'
+                "content-type": 'application/json',
+                "accept": 'application/json'
             },
             "body": 'test'
         };
@@ -158,17 +164,17 @@ describe('RingAuthorization', function () {
             "uri": '/examplebucket',
             "headers": {
                 "host": 'test',
-                "Content-Type": 'application/json',
-                "Accept": 'application/json'
+                "content-type": 'application/json',
+                "accept": 'application/json'
             },
             "body": buffer
         };
         var opt = {
             service: 'pulsapi',
-            scope: 'dl1-request',
+            scope: 'dl1_request',
             solution: 'region',
-            accessKeyId: 'AKID',
-            secret: 'TEST'
+            accessKey: 'AKID',
+            secretKey: 'TEST'
         };
 
         describe('Invalid payload', function () {
