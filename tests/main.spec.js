@@ -4,6 +4,11 @@ var moment = require('moment');
 var DLSigner = require('../index').DLSigner;
 
 describe('RingAuthorization', function () {
+    Date.now = function () {
+        return 0;
+    };
+    Date.prototype.getTime = Date.now;
+
     describe('GET request', function () {
         var request = {
             "method": "GET",
@@ -74,7 +79,7 @@ describe('RingAuthorization', function () {
                     'header4': ''
                 };
                 headers = signer._copyHeaders(headers);
-                var correctHeaders = 'header1:val1\nheader2:val2\nheader3:va l3\nheader4:';
+                var correctHeaders = 'header1:val1\nheader2:val2\nheader3:va l3\nheader4:\nx-dl-date:19700101T010000Z';
                 expect(signer._prepareCanonicalHeaders(headers)).to.equal(correctHeaders);
             });
         });
@@ -104,35 +109,33 @@ describe('RingAuthorization', function () {
         describe('Canonical Request', function () {
             it('Returns correct canonical request', function () {
                 request.uri = '/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20';
-                var headers = request['headers'];
+                var headers = signer._copyHeaders(request['headers']);
                 var canonicalRequest = signer._prepareCanonicalRequest(
-                    request['method'], signer._prepareCanonicalURI(request['uri']), signer._prepareCanonicalQueryString(request),
-                    signer._prepareCanonicalHeaders(headers),
-                    signer._prepareSignedHeaders(headers), signer._hash(request.body, true, true));
+                    request, headers, signer._prepareSignedHeaders(headers));
                 var correctValue = 'GET\n' +
                     encodeURIComponent('/examplebucket') + '\n' +
                     'marker=someMarker&max-keys=20&prefix=somePrefix\n' +
                     'accept:application/json\n' +
                     'content-type:application/json\n' +
                     'host:test\n' +
-                    'accept;content-type;host\n' +
+                    'x-dl-date:19700101T010000Z\n' +
+                    'accept;content-type;host;x-dl-date\n' +
                     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
                 expect(canonicalRequest).to.equal(correctValue);
             });
             it('Returns correct canonical request when no query string is provided', function () {
                 request.uri = '/examplebucket';
-                var headers = request['headers'];
+                var headers = signer._copyHeaders(request['headers']);
                 var canonicalRequest = signer._prepareCanonicalRequest(
-                    request['method'], signer._prepareCanonicalURI(request['uri']), signer._prepareCanonicalQueryString(request),
-                    signer._prepareCanonicalHeaders(headers),
-                    signer._prepareSignedHeaders(headers), signer._hash(request.body, true, true));
+                    request, headers, signer._prepareSignedHeaders(headers));
                 var correctValue = 'GET\n' +
                     encodeURIComponent('/examplebucket') + '\n' +
                     '\n' +
                     'accept:application/json\n' +
                     'content-type:application/json\n' +
                     'host:test\n' +
-                    'accept;content-type;host\n' +
+                    'x-dl-date:19700101T010000Z\n' +
+                    'accept;content-type;host;x-dl-date\n' +
                     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
                 expect(canonicalRequest).to.equal(correctValue);
             });
@@ -192,18 +195,18 @@ describe('RingAuthorization', function () {
         describe('Canonical Request', function () {
             it('Returns correct canonical request when request body is provided', function () {
                 request.uri = '/examplebucket';
-                var headers = request['headers'];
+                var headers = signer._copyHeaders(request['headers']);
                 var canonicalRequest = signer._prepareCanonicalRequest(
-                    request['method'], signer._prepareCanonicalURI(request['uri']), signer._prepareCanonicalQueryString(request),
-                    signer._prepareCanonicalHeaders(headers),
-                    signer._prepareSignedHeaders(headers), signer._hash(request.body, true, true));
+                    request, signer._copyHeaders(headers),
+                    signer._prepareSignedHeaders(headers));
                 var correctValue = 'POST\n' +
                     encodeURIComponent('/examplebucket') + '\n' +
                     '\n' +
                     'accept:application/json\n' +
                     'content-type:application/json\n' +
                     'host:test\n' +
-                    'accept;content-type;host\n' +
+                    'x-dl-date:19700101T010000Z\n' +
+                    'accept;content-type;host;x-dl-date\n' +
                     '9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08'.toLowerCase();
                 expect(canonicalRequest).to.equal(correctValue);
             });

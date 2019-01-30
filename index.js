@@ -118,7 +118,7 @@ DLSigner.prototype._prepareCanonicalHeaders = function (headers) {
 
 /**
  * Sorts and returns signed headers string
- * @param {string} headers - input headers
+ * @param {object} headers - input headers
  * @returns {string} string of signed headers
  */
 DLSigner.prototype._prepareSignedHeaders = function (headers) {
@@ -138,7 +138,7 @@ DLSigner.prototype._prepareSignedHeaders = function (headers) {
  * @returns {string} string of canonical query string
  */
 DLSigner.prototype._prepareCanonicalQueryString = function (request) {
-    var uri = (request.uri) ? request.uri : '/';
+    var uri = request.uri ? request.uri : '/';
     var params = '';
     var canonicalQueryString = '';
 
@@ -166,13 +166,14 @@ DLSigner.prototype._prepareCanonicalQueryString = function (request) {
  * @returns {string} canonical uri from input
  */
 DLSigner.prototype._prepareCanonicalURI = function (uri) {
+    uri = uri ? uri : '/';
     return uri.split('?')[0];
 };
 
 /**
  * Prepares and returns a canonical request
  * @param {object} request - request
- * @param {string} headers - sorted headers with x-dl-date header
+ * @param {object} headers - sorted headers with x-dl-date header
  * @param {string} signedHeaders - signed headers string
  * @returns {string} string of canonical request
  */
