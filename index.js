@@ -1,6 +1,7 @@
 var crypto = require('crypto');
 var moment = require('moment');
 
+
 var REQUEST_EXPIRATION_TIME = 15; // in minutes
 
 var acceptedHashMethods = ['sha224', 'sha256', 'sha384', 'sha512'];
@@ -42,9 +43,8 @@ DLSigner.prototype._validate = function () {
 
 DLSigner.prototype._sign = function (key, msg, hexOutput) {
     hexOutput = hexOutput ? hexOutput : false;
-    if (!msg) {
-        msg = '';
-    }
+    msg = msg ? msg : '';
+
     var sign = crypto.createHmac(this.hashAlg, key);
     sign.update(msg, 'utf-8');
     return hexOutput ? sign.digest('hex') : sign.digest();
@@ -53,10 +53,8 @@ DLSigner.prototype._sign = function (key, msg, hexOutput) {
 DLSigner.prototype._hash = function (msg, hexOutput, isPayload) {
     hexOutput = hexOutput ? hexOutput : false;
     isPayload = isPayload ? isPayload : false;
+    msg = msg ? msg : '';
 
-    if (!msg) {
-        msg = '';
-    }
     var sign = crypto.createHash(this.hashAlg);
     isPayload ? sign.update(msg) : sign.update(msg, 'utf-8');
     return hexOutput ? sign.digest('hex') : sign.digest();
@@ -124,9 +122,9 @@ DLSigner.prototype._prepareCanonicalRequest = function (method, canonicalUri, ca
         '\n' + canonicalQueryString + '\n' + canonicalHeaders + '\n' + signedHeaders + '\n' + payloadHash;
 };
 
-DLSigner.prototype.isNotOutdated = function (dlDate) {
+DLSigner.prototype.isOutdated = function (dlDate) {
     var requestDateLimit = moment().clone(dlDate).subtract(REQUEST_EXPIRATION_TIME, 'minutes');
-    return moment(dlDate, 'YYYYMMDD[T]HHmmss[Z]').isAfter(requestDateLimit);
+    return moment(dlDate, 'YYYYMMDD[T]HHmmss[Z]').isBefore(requestDateLimit);
 };
 
 DLSigner.prototype._getSigningKey = function (dateStamp, solution, service, request_scope) {
@@ -157,7 +155,7 @@ DLSigner.prototype._validateRequest = function (request, headers) {
     if (request.body && !Buffer.isBuffer(request.body)) {
         throw Error('Invalid payload!');
     }
-    if (!this.isNotOutdated(headers['x-dl-date'])) {
+    if (this.isOutdated(headers['x-dl-date'])) {
         throw Error('Invalid X-DL-Date header!');
     }
 };
