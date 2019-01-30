@@ -3,6 +3,9 @@ var moment = require('moment');
 
 
 var REQUEST_EXPIRATION_TIME = 15; // in minutes
+var DEFAULT_SOLUTION = 'RING';
+var DEFAULT_REQUEST_SCOPE = 'dl1_request';
+var DEFAULT_ALGORITHM = 'DL-HMAC-SHA256';
 
 var acceptedHashMethods = ['sha224', 'sha256', 'sha384', 'sha512'];
 var acceptedMethod = 'DL-HMAC-SHA';
@@ -16,10 +19,10 @@ var acceptedRequestScope = 'dl1_request';
  * @param options {object} - object that must contain secretKey, accessKey, service params.
  */
 var DLSigner = function (options) {
-    this.algorithm = options.algorithm ? options.algorithm : 'DL-HMAC-SHA256';
+    this.algorithm = options.algorithm ? options.algorithm : DEFAULT_ALGORITHM;
     this.options = options;
-    this.options.scope = this.options.scope ? this.options.scope : 'dl1_request';
-    this.options.solution = this.options.solution ? this.options.solution : 'RING';
+    this.options.scope = this.options.scope ? this.options.scope : DEFAULT_REQUEST_SCOPE;
+    this.options.solution = this.options.solution ? this.options.solution : DEFAULT_SOLUTION;
     this.hashAlg = this.algorithm.split('-').slice(-1)[0].toLowerCase();
 
     this._validateOptions();
@@ -32,19 +35,19 @@ DLSigner.prototype._validateOptions = function () {
     if (typeof (this.algorithm) !== 'string' || !this.algorithm.indexOf(acceptedMethod) === 0) {
         throw Error('Invalid algorithm!');
     }
-    if (acceptedHashMethods.indexOf(this.hashAlg) < 0) {
+    if (typeof (this.hashAlg) !== 'string' || acceptedHashMethods.indexOf(this.hashAlg) < 0) {
         throw Error('Invalid hash method');
     }
-    if (!this.options.secretKey) {
+    if (typeof (this.options.secretKey) !== 'string') {
         throw Error('Secret key is missing!');
     }
-    if (!this.options.accessKey) {
+    if (typeof (this.options.accessKey) !== 'string') {
         throw Error('Access key ID is missing!');
     }
-    if (this.options.service !== acceptedService) {
+    if (typeof (this.options.service) !== 'string' || this.options.service !== acceptedService) {
         throw Error('Invalid service option!')
     }
-    if (this.options.scope !== acceptedRequestScope) {
+    if (typeof (this.options.scope) !== 'string' || this.options.scope !== acceptedRequestScope) {
         throw Error('Invalid scope option!');
     }
 };
@@ -217,16 +220,16 @@ DLSigner.prototype._getCredentialString = function (dateStamp) {
  * @param {object} headers - headers to be validate
  */
 DLSigner.prototype._validateRequest = function (request, headers) {
-    if (!request.method) {
+    if (typeof (request.method) !== 'string') {
         throw Error('Method in options is missing!');
     }
-    if (!request.headers) {
+    if (typeof (request.headers) !== 'object') {
         throw Error('No headers provided!');
     }
-    if (!headers.host) {
+    if (typeof (headers.host) !== 'string') {
         throw Error('Host is missing!');
     }
-    if (!headers['content-type']) {
+    if (typeof (headers['content-type']) !== 'string') {
         throw Error('Content-Type is missing!');
     }
     if (request.body && !Buffer.isBuffer(request.body)) {
