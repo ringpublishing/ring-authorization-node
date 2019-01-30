@@ -9,7 +9,12 @@ var acceptedMethod = 'DL-HMAC-SHA';
 var acceptedService = 'pulsapi';
 var acceptedRequestScope = 'dl1_request';
 
-
+/**
+ * Request signer for DL authentication. Calculates request signature using HMAC algorithm, basing on request headers, uri and others.
+ * Available hash algorithms - sha224, sha256, sha384, sha512. Accepted services - 'pulsapi'.
+ * @class DLSigner
+ * @param options {object} - object that must contain secretKey, accessKey, service params.
+ */
 var DLSigner = function (options) {
     this.algorithm = options.algorithm ? options.algorithm : 'DL-HMAC-SHA256';
     this.options = options;
@@ -17,10 +22,13 @@ var DLSigner = function (options) {
     this.options.solution = this.options.solution ? this.options.solution : 'RING';
     this.hashAlg = this.algorithm.split('-').slice(-1)[0].toLowerCase();
 
-    this._validate();
+    this._validateOptions();
 };
 
-DLSigner.prototype._validate = function () {
+/**
+ * Validates options parameter
+ */
+DLSigner.prototype._validateOptions = function () {
     if (typeof (this.algorithm) !== 'string' || !this.algorithm.indexOf(acceptedMethod) === 0) {
         throw Error('Invalid algorithm!');
     }
@@ -41,6 +49,13 @@ DLSigner.prototype._validate = function () {
     }
 };
 
+/**
+ * Performs HMAC digest
+ * @param {string} key - key
+ * @param {string} msg - message to be digested
+ * @param {boolean} hexOutput - determines if a message should be returned in hex encoding
+ * @returns {string} Digested message
+ */
 DLSigner.prototype._sign = function (key, msg, hexOutput) {
     hexOutput = hexOutput ? hexOutput : false;
     msg = msg ? msg : '';
@@ -50,6 +65,13 @@ DLSigner.prototype._sign = function (key, msg, hexOutput) {
     return hexOutput ? sign.digest('hex') : sign.digest();
 };
 
+/**
+ * Performs hash digest
+ * @param {string} msg - message to be digested
+ * @param {boolean} hexOutput - determines if a message should be returned in hex encoding
+ * @param {boolean} isPayload - determines if a message is request payload
+ * @returns {string} Message hash
+ */
 DLSigner.prototype._hash = function (msg, hexOutput, isPayload) {
     hexOutput = hexOutput ? hexOutput : false;
     isPayload = isPayload ? isPayload : false;
@@ -60,10 +82,22 @@ DLSigner.prototype._hash = function (msg, hexOutput, isPayload) {
     return hexOutput ? sign.digest('hex') : sign.digest();
 };
 
-DLSigner.prototype._prepareStringToSign = function (timeStamp, credentialsString, req_hash) {
-    return this.algorithm + '\n' + moment(timeStamp, 'YYYYMMDD[T]HHmmss[Z]').format('YYYYMMDD[T]HHmmss[Z]') + '\n' + credentialsString + '\n' + req_hash;
+/**
+ * Creates string to sign
+ * @param {string} timeStamp - timestamp in format YYYYMMDDTHHmmssZ
+ * @param {string} credentialsString -
+ * @param {string} canonicalRequest - string containing canonical request
+ * @returns {string} string to sign
+ */
+DLSigner.prototype._prepareStringToSign = function (timeStamp, credentialsString, canonicalRequest) {
+    return this.algorithm + '\n' + timeStamp + '\n' + credentialsString + '\n' + this._hash(canonicalRequest, true);
 };
 
+/**
+ * Sorts and returns canonical headers string
+ * @param {string} headers - input headers
+ * @returns {string} Canonical headers
+ */
 DLSigner.prototype._prepareCanonicalHeaders = function (headers) {
     var res = '';
     var can_header;
@@ -79,6 +113,11 @@ DLSigner.prototype._prepareCanonicalHeaders = function (headers) {
     return res;
 };
 
+/**
+ * Sorts and returns signed headers string
+ * @param {string} headers - input headers
+ * @returns {string} string of signed headers
+ */
 DLSigner.prototype._prepareSignedHeaders = function (headers) {
     var signedHeaders = [];
     var signedHeader;
@@ -90,6 +129,11 @@ DLSigner.prototype._prepareSignedHeaders = function (headers) {
     return signedHeaders.join(';');
 };
 
+/**
+ * Parses query string
+ * @param {object} request - input request
+ * @returns {string} string of canonical query string
+ */
 DLSigner.prototype._prepareCanonicalQueryString = function (request) {
     var uri = (request.uri) ? request.uri : '/';
     var params = '';
@@ -113,32 +157,65 @@ DLSigner.prototype._prepareCanonicalQueryString = function (request) {
     return canonicalQueryString;
 };
 
+/**
+ * Prepares and returns a canonical uri
+ * @param {string} uri - input uri
+ * @returns {string} canonical uri from input
+ */
 DLSigner.prototype._prepareCanonicalURI = function (uri) {
     return uri.split('?')[0];
 };
 
-DLSigner.prototype._prepareCanonicalRequest = function (method, canonicalUri, canonicalQueryString, canonicalHeaders, signedHeaders, payloadHash) {
-    return encodeURIComponent(method) + '\n' + encodeURIComponent(canonicalUri) +
-        '\n' + canonicalQueryString + '\n' + canonicalHeaders + '\n' + signedHeaders + '\n' + payloadHash;
+/**
+ * Prepares and returns a canonical request
+ * @param {object} request - request
+ * @param {string} headers - sorted headers with x-dl-date header
+ * @param {string} signedHeaders - signed headers string
+ * @returns {string} string of canonical request
+ */
+DLSigner.prototype._prepareCanonicalRequest = function (request, headers, signedHeaders) {
+    return encodeURIComponent(request.method) + '\n' + encodeURIComponent(this._prepareCanonicalURI(request.uri)) +
+        '\n' + this._prepareCanonicalQueryString(request) + '\n' + this._prepareCanonicalHeaders(headers) + '\n'
+        + signedHeaders + '\n' + this._hash(request.body, true, true);
 };
 
+/**
+ * Checks if input date is outdated
+ * @param {string} dlDate - date to be checked
+ * @returns boolean that determines if a dlDate is not valid
+ */
 DLSigner.prototype.isOutdated = function (dlDate) {
     var requestDateLimit = moment().clone(dlDate).subtract(REQUEST_EXPIRATION_TIME, 'minutes');
     return moment(dlDate, 'YYYYMMDD[T]HHmmss[Z]').isBefore(requestDateLimit);
 };
 
-DLSigner.prototype._getSigningKey = function (dateStamp, solution, service, request_scope) {
+/**
+ * Generates signing key
+ * @param {string} dateStamp - date in format YYYYMMDD
+ * @returns signing key
+ */
+DLSigner.prototype._getSigningKey = function (dateStamp) {
     var sign = this._sign('DL' + this.options.secretKey, dateStamp);
-    sign = this._sign(sign, solution);
-    sign = this._sign(sign, service);
-    return this._sign(sign, request_scope);
+    sign = this._sign(sign, this.options.solution);
+    sign = this._sign(sign, this.options.service);
+    return this._sign(sign, this.options.scope);
 };
 
-DLSigner.prototype._getCredentialString = function (dateStamp, solution, service, scope) {
-    var credentials = [dateStamp, solution, service, scope];
+/**
+ * Generates credential string
+ * @param {string} dateStamp - date in format YYYYMMDD
+ * @returns {string}
+ */
+DLSigner.prototype._getCredentialString = function (dateStamp) {
+    var credentials = [dateStamp, this.options.solution, this.options.service, this.options.scope];
     return credentials.join('/');
 };
 
+/**
+ * Validates request and headers against required fields
+ * @param {object} request - request to be validate
+ * @param {object} headers - headers to be validate
+ */
 DLSigner.prototype._validateRequest = function (request, headers) {
     if (!request.method) {
         throw Error('Method in options is missing!');
@@ -160,43 +237,43 @@ DLSigner.prototype._validateRequest = function (request, headers) {
     }
 };
 
+/**
+ * Copies headers, changes letters to lowercase and adds x-dl-date header
+ * @param {object} headers - headers to be copied
+ * @returns {object} - copied, lowercase headers
+ */
 DLSigner.prototype._copyHeaders = function (headers) {
     var copiedHeaders = {};
     for (var i in headers) {
         copiedHeaders[i.toLowerCase()] = headers[i];
     }
+    if (!copiedHeaders['x-dl-date']) {
+        copiedHeaders['x-dl-date'] = moment().format('YYYYMMDD[T]HHmmss[Z]');
+    }
     return copiedHeaders;
 };
 
 /**
- * Signs request and adds X-DL-Date header
- * @param {object} request - request to be signed
- * @returns {object} - signed request
+ * Signs request by performing necessary steps
+ * @param {object} request - request that will be signed. Must contain method param and headers with content-type, host.
+ * May contain body param with request body, which must be a Buffer.
+ * @returns {object} - Authorization header with signature and X-DL-Date header
  */
 DLSigner.prototype.sign = function (request) {
     var copiedHeaders = this._copyHeaders(request.headers);
-    if (!copiedHeaders['x-dl-date']) {
-        copiedHeaders['x-dl-date'] = moment().format('YYYYMMDD[T]HHmmss[Z]');
-    }
+
     this._validateRequest(request, copiedHeaders);
     var signedHeaders = this._prepareSignedHeaders(copiedHeaders);
 
-    var canonicalRequest = this._prepareCanonicalRequest(
-        request.method, this._prepareCanonicalURI(request.uri), this._prepareCanonicalQueryString(request),
-        this._prepareCanonicalHeaders(copiedHeaders),
-        signedHeaders, this._hash(request.body, true, true));
+    var canonicalRequest = this._prepareCanonicalRequest(request, copiedHeaders, signedHeaders);
 
-    var canonicalRequestHash = this._hash(canonicalRequest, true);
     var dateStamp = moment(copiedHeaders['x-dl-date'], 'YYYYMMDD[T]HHmmss[Z]').format('YYYYMMDD');
 
-    var credentialsString = this._getCredentialString(dateStamp, this.options.solution,
-        this.options.service, this.options.scope);
+    var credentialsString = this._getCredentialString(dateStamp);
 
-    var stringToSign = this._prepareStringToSign(copiedHeaders['x-dl-date'], credentialsString, canonicalRequestHash);
-    var signingKey = this._getSigningKey(dateStamp, this.options.solution,
-        this.options.service, this.options.scope);
-
-    var authorizationSignature = this._sign(signingKey, stringToSign, true);
+    var authorizationSignature = this._sign(this._getSigningKey(dateStamp),
+        this._prepareStringToSign(copiedHeaders['x-dl-date'], credentialsString, canonicalRequest),
+        true);
 
     return {
         'Authorization': this.algorithm + ' ' + 'Credential=' + this.options.accessKey + '/' +
