@@ -268,8 +268,9 @@ DLSigner.prototype._uriEncode = function (input, encodeSlash) {
  */
 DLSigner.prototype._copyHeaders = function (headers) {
     var copiedHeaders = {};
-    for (var i in headers) {
-        copiedHeaders[i.toLowerCase()] = headers[i];
+    var headersFields = Object.keys(headers);
+    for (var i = 0; i < headersFields.length; i++) {
+        copiedHeaders[headersFields[i].toLowerCase()] = headers[headersFields[i]];
     }
     if (!copiedHeaders['x-dl-date']) {
         copiedHeaders['x-dl-date'] = moment().format('YYYYMMDD[T]HHmmss[Z]');
