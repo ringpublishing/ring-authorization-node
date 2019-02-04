@@ -22,7 +22,7 @@ var buffer = new Buffer('test');
 
 var request2 = {
     'method': 'POST',
-    'uri': '/test',
+    'uri': '/resources',
     'headers': {
         'Host': 'test',
         'Content-Type': 'application/json',

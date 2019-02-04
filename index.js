@@ -39,10 +39,10 @@ DLSigner.prototype._validateOptions = function () {
         throw Error('Invalid hash method');
     }
     if (typeof (this.options.secretKey) !== 'string') {
-        throw Error('Secret key is missing!');
+        throw Error('Invalid secret key!');
     }
     if (typeof (this.options.accessKey) !== 'string') {
-        throw Error('Access key ID is missing!');
+        throw Error('Invalid access key!');
     }
     if (typeof (this.options.service) !== 'string' || this.options.service !== acceptedService) {
         throw Error('Invalid service option!')
@@ -98,16 +98,15 @@ DLSigner.prototype._prepareStringToSign = function (timeStamp, credentialsString
 
 /**
  * Sorts and returns canonical headers string
- * @param {string} headers - input headers
+ * @param {object} headers - input headers
  * @returns {string} Canonical headers
  */
 DLSigner.prototype._prepareCanonicalHeaders = function (headers) {
     var res = '';
-    var can_header;
     var sortedHeaders = Object.keys(headers).sort();
 
     for (var i = 0; i < sortedHeaders.length; i++) {
-        can_header = sortedHeaders[i];
+        var can_header = sortedHeaders[i];
         res += can_header + ':' + headers[sortedHeaders[i]].trim();
         if (i !== sortedHeaders.length - 1) {
             res += '\n';
@@ -144,14 +143,11 @@ DLSigner.prototype._prepareCanonicalQueryString = function (request) {
 
     if (uri.indexOf('?') >= 0) {
         uri = uri.split('?');
-        params = uri[1];
-        params = params.split('&').sort();
-        var param;
-        var val;
+        params = uri[1].split('&').sort();
         for (var i = 0; i < params.length; i++) {
-            param = params[i].split('=');
-            val = (param[1]) ? param[1] : '';
-            canonicalQueryString += encodeURIComponent(param[0]) + '=' + encodeURIComponent(val);
+            var param = params[i].split('=');
+            var val = (param[1]) ? param[1] : '';
+            canonicalQueryString += this._uriEncode(param[0], true) + '=' + this._uriEncode(val, true);
             if (i !== params.length - 1) {
                 canonicalQueryString += '&';
             }
@@ -166,8 +162,7 @@ DLSigner.prototype._prepareCanonicalQueryString = function (request) {
  * @returns {string} canonical uri from input
  */
 DLSigner.prototype._prepareCanonicalURI = function (uri) {
-    uri = uri ? uri : '/';
-    return uri.split('?')[0];
+    return uri ? this._uriEncode(uri.split('?')[0], false) : '/';
 };
 
 /**
@@ -178,7 +173,7 @@ DLSigner.prototype._prepareCanonicalURI = function (uri) {
  * @returns {string} string of canonical request
  */
 DLSigner.prototype._prepareCanonicalRequest = function (request, headers, signedHeaders) {
-    return encodeURIComponent(request.method) + '\n' + encodeURIComponent(this._prepareCanonicalURI(request.uri)) +
+    return request.method + '\n' + this._prepareCanonicalURI(request.uri) +
         '\n' + this._prepareCanonicalQueryString(request) + '\n' + this._prepareCanonicalHeaders(headers) + '\n'
         + signedHeaders + '\n' + this._hash(request.body, true, true);
 };
@@ -222,16 +217,16 @@ DLSigner.prototype._getCredentialString = function (dateStamp) {
  */
 DLSigner.prototype._validateRequest = function (request, headers) {
     if (typeof (request.method) !== 'string') {
-        throw Error('Method in options is missing!');
+        throw Error('Invalid request method!');
     }
     if (typeof (request.headers) !== 'object') {
-        throw Error('No headers provided!');
+        throw Error('Invalid request headers!');
     }
     if (typeof (headers.host) !== 'string') {
-        throw Error('Host is missing!');
+        throw Error('Invalid Host header!');
     }
     if (typeof (headers['content-type']) !== 'string') {
-        throw Error('Content-Type is missing!');
+        throw Error('Invalid Content-Type header!');
     }
     if (request.body && !Buffer.isBuffer(request.body)) {
         throw Error('Invalid payload!');
@@ -239,6 +234,31 @@ DLSigner.prototype._validateRequest = function (request, headers) {
     if (this.isOutdated(headers['x-dl-date'])) {
         throw Error('Invalid X-DL-Date header!');
     }
+};
+
+/**
+ * Encodes given input string
+ * @param {string} input - input string
+ * @param {boolean} encodeSlash - determines if slash should be encoded
+ * @returns {string} - encoded result
+ */
+DLSigner.prototype._uriEncode = function (input, encodeSlash) {
+    var unreservedCharacters = ['-', '_', '~', '.'];
+    var res = '';
+
+    for (var i = 0; i < input.length; i++) {
+        var ch = input.charAt(i);
+        if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') ||
+            unreservedCharacters.indexOf(ch) >= 0) {
+            res += ch;
+        } else if (ch === '/') {
+            res += encodeSlash ? '%2F' : ch;
+        } else {
+            res += encodeURIComponent(ch);
+        }
+    }
+
+    return res;
 };
 
 /**

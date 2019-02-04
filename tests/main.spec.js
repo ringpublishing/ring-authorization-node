@@ -113,7 +113,7 @@ describe('RingAuthorization', function () {
                 var canonicalRequest = signer._prepareCanonicalRequest(
                     request, headers, signer._prepareSignedHeaders(headers));
                 var correctValue = 'GET\n' +
-                    encodeURIComponent('/examplebucket') + '\n' +
+                    signer._uriEncode('/examplebucket', false) + '\n' +
                     'marker=someMarker&max-keys=20&prefix=somePrefix\n' +
                     'accept:application/json\n' +
                     'content-type:application/json\n' +
@@ -129,7 +129,7 @@ describe('RingAuthorization', function () {
                 var canonicalRequest = signer._prepareCanonicalRequest(
                     request, headers, signer._prepareSignedHeaders(headers));
                 var correctValue = 'GET\n' +
-                    encodeURIComponent('/examplebucket') + '\n' +
+                    signer._uriEncode('/examplebucket', false) + '\n' +
                     '\n' +
                     'accept:application/json\n' +
                     'content-type:application/json\n' +
@@ -200,7 +200,7 @@ describe('RingAuthorization', function () {
                     request, signer._copyHeaders(headers),
                     signer._prepareSignedHeaders(headers));
                 var correctValue = 'POST\n' +
-                    encodeURIComponent('/examplebucket') + '\n' +
+                    signer._uriEncode('/examplebucket', false) + '\n' +
                     '\n' +
                     'accept:application/json\n' +
                     'content-type:application/json\n' +
