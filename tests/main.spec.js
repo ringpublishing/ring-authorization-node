@@ -1,5 +1,4 @@
 var expect = require('chai').expect;
-var moment = require('moment');
 
 var DLSigner = require('../index').DLSigner;
 
@@ -10,23 +9,22 @@ describe('RingAuthorization', function () {
     Date.prototype.getTime = Date.now;
 
     describe('GET request', function () {
+        var opt = {
+            service: 'pulsapi',
+            accessKey: 'test',
+            secretKey: 'test'
+        };
+        var signer = new DLSigner(opt);
+
         var request = {
             "method": "GET",
-            "uri": '/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20',
+            "uri": '/test',
             "headers": {
                 "host": 'test',
                 "content-type": 'application/json',
                 "accept": 'application/json'
             }
         };
-        var opt = {
-            service: 'pulsapi',
-            scope: 'dl1_request',
-            solution: 'region',
-            accessKey: 'AKID',
-            secretKey: 'TEST'
-        };
-        var signer = new DLSigner(opt);
 
         describe('Invalid algorithm', function () {
             it('Should throw Error', function () {
@@ -46,169 +44,149 @@ describe('RingAuthorization', function () {
                 }).to.throw();
             });
         });
-        describe('Hashing', function () {
-            it('Should return correct SHA256 of a string', function () {
-                var testHash = '9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08'.toLowerCase(); // 'test' sha256 hash
-                expect(signer._hash('test', true)).to.equal(testHash);
-            });
-            it('Should return correct SHA512 of a string', function () {
-                opt.algorithm = 'DL-HMAC-SHA512';
-                var signerAlg = new DLSigner(opt);
-                var testHash = 'EE26B0DD4AF7E749AA1A8EE3C10AE9923F618980772E473F8819A5D4940E0DB27AC185F8A0E1D5F84F88BC887FD67B143732C304CC5FA9AD8E6F57F50028A8FF'.toLowerCase(); // 'test' sha256 hash
-                expect(signerAlg._hash('test', true)).to.equal(testHash);
-                opt.algorithm = null;
+
+
+        describe('Correct Authorization header for request without query string', function () {
+            it('Should return correct SHA256 hash for given request', function () {
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;x-dl-date,Signature=' +
+                    '267247df1f154aefc4d27033245fa55cb8abb31f48a85ba55ebfaf82aec4a187';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
-        describe('Correct payload hash', function () {
-            it('Should return hash of empty string when payload is empty', function () {
-                var testHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'.toLowerCase(); // empty string hash
-                expect(signer._hash(request.body, true)).to.equal(testHash);
-            });
-        });
-        describe('Correct Signed Headers', function () {
-            it('Should return sorted and joined together signed headers', function () {
-                expect(signer._prepareSignedHeaders(request.headers)).to.equal('accept;content-type;host');
-            });
-        });
-        describe('Correct Canonical Headers', function () {
-            it('Should correctly trim values and return lowercase names', function () {
-                var headers = {
-                    'HEADER1': '  val1  ',
-                    'heaDer2': ' val2',
-                    'Header3': 'va l3',
-                    'header4': ''
-                };
-                headers = signer._copyHeaders(headers);
-                var correctHeaders = 'header1:val1\nheader2:val2\nheader3:va l3\nheader4:\nx-dl-date:19700101T010000Z';
-                expect(signer._prepareCanonicalHeaders(headers)).to.equal(correctHeaders);
-            });
-        });
-        describe('Sign', function () {
-            it('Returns correct timestamp', function () {
-                var timestamp = moment(signer.sign(request)['X-DL-Date']);
-                expect(timestamp.isSame(new Date(), 'day')).to.equal(true);
-            });
-        });
-        describe('Canonical Query String', function () {
-            it('Returns correct canonical query string', function () {
-                expect(signer._prepareCanonicalQueryString(request)).to.equal('marker=someMarker&max-keys=20&prefix=somePrefix');
-            });
-            it('Returns correct canonical query string with encoded values', function () {
-                request.uri = '/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20&test=t^e s';
-                expect(signer._prepareCanonicalQueryString(request)).to.equal('marker=someMarker&max-keys=20&prefix=somePrefix&test=t%5Ee%20s');
-            });
-            it('Returns correct canonical query string with encoded values and empty value', function () {
-                request.uri = '/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20&test=t^e s&aws';
-                expect(signer._prepareCanonicalQueryString(request)).to.equal('aws=&marker=someMarker&max-keys=20&prefix=somePrefix&test=t%5Ee%20s');
-            });
-            it('Returns correct canonical query string sorted by query param', function () {
-                request.uri = '/examplebucket?zzz=someValue&Aaaa=someValue&aaa=20&test=t^e s&aws';
-                expect(signer._prepareCanonicalQueryString(request)).to.equal('Aaaa=someValue&aaa=20&aws=&test=t%5Ee%20s&zzz=someValue');
-            });
-        });
-        describe('Canonical Request', function () {
-            it('Returns correct canonical request', function () {
+        describe('Correct Authorization header for request with query string', function () {
+            it('Should return correct SHA256 hash for given request', function () {
                 request.uri = '/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20';
-                var headers = signer._copyHeaders(request['headers']);
-                var canonicalRequest = signer._prepareCanonicalRequest(
-                    request, headers, signer._prepareSignedHeaders(headers));
-                var correctValue = 'GET\n' +
-                    signer._uriEncode('/examplebucket', false) + '\n' +
-                    'marker=someMarker&max-keys=20&prefix=somePrefix\n' +
-                    'accept:application/json\n' +
-                    'content-type:application/json\n' +
-                    'host:test\n' +
-                    'x-dl-date:19700101T010000Z\n' +
-                    'accept;content-type;host;x-dl-date\n' +
-                    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
-                expect(canonicalRequest).to.equal(correctValue);
+
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;x-dl-date,Signature=' +
+                    'ca334d74f2c3b9cc0415b9383966ac1e3c18bd43d9941c5ecdfe272a90aec8f0';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
-            it('Returns correct canonical request when no query string is provided', function () {
-                request.uri = '/examplebucket';
-                var headers = signer._copyHeaders(request['headers']);
-                var canonicalRequest = signer._prepareCanonicalRequest(
-                    request, headers, signer._prepareSignedHeaders(headers));
-                var correctValue = 'GET\n' +
-                    signer._uriEncode('/examplebucket', false) + '\n' +
-                    '\n' +
-                    'accept:application/json\n' +
-                    'content-type:application/json\n' +
-                    'host:test\n' +
-                    'x-dl-date:19700101T010000Z\n' +
-                    'accept;content-type;host;x-dl-date\n' +
-                    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
-                expect(canonicalRequest).to.equal(correctValue);
+
+            it('Should return correct X-DL-Date header', function () {
+                var correctDate = '19700101T010000Z';
+                expect(signer.sign(request)['X-DL-Date']).to.equal(correctDate);
+            });
+        });
+        describe('Correct Authorization header for request with unsorted query parameters without value', function () {
+            it('Should return correct SHA256 hash for given request', function () {
+                request.uri = '/test?Zzz&aaa&Aaa';
+
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;x-dl-date,Signature=' +
+                    'ba2bc6a87afbff9e4fdcca768ce75e1c07808aaa45863c73387556f43473142f';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
+            });
+        });
+
+        describe('Correct Authorization header for request with unsorted query parameters without value', function () {
+            it('Should return correct SHA256 hash for given request', function () {
+                request.uri = '/test?Zzz&aaa=B&Aaa';
+
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;x-dl-date,Signature=' +
+                    'ebfa4276ec80c405cf24d8c5b0816449309427a50cfbd3975a8894aea9d6fdbc';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
+            });
+        });
+
+        describe('Correct Authorization header for request with whitespace in query string', function () {
+            it('Should return correct SHA256 hash for given request', function () {
+                request.uri = '/test/test2?Zzz&aaa=B&Aaa= aw';
+
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;x-dl-date,Signature=' +
+                    '9e5bc2455a134e86095e7fb631c57d84b2d6c7c8b3db3c0e9ecac96a9068af62';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
+            });
+        });
+
+        describe('Correct Authorization header for request with unreserved characters query string', function () {
+            it('Should return correct SHA256 hash for given request', function () {
+                request.uri = '/test/test2?Zzz&aaa=B&Aaa= /aw';
+
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;x-dl-date,Signature=' +
+                    '2ce30a1edcc686c79b816189c653be1c980a850c04140cbdbde3d2572f62041a';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
+            });
+        });
+
+        describe('Correct Authorization header for request with SHA-512 hash', function () {
+            it('Should return correct SHA512 hash for given request', function () {
+                opt.algorithm = 'DL-HMAC-SHA512';
+                signer = new DLSigner(opt);
+                request.uri = '/test/test2?Zzz&aaa=B&Aaa= /aw.~~';
+
+                var correctHash = 'DL-HMAC-SHA512 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;x-dl-date,Signature=' +
+                    'bfcf0da0eaeb312f4d4164685996cdb319c57993700a9d0b398b3c5da4da40291e0a25a695752ba08b05019c6b24caec7e9862820bfca149a29be40ee2f4583f';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
     });
 
     describe('POST request', function () {
-        var buffer = new Buffer('test');
-        var invalidPayload = {
-            "method": "POST",
-            "uri": '/examplebucket',
-            "headers": {
-                "host": 'test',
-                "content-type": 'application/json',
-                "accept": 'application/json'
-            },
-            "body": 'test'
-        };
         var request = {
             "method": "POST",
-            "uri": '/examplebucket',
+            "uri": '/test',
             "headers": {
                 "host": 'test',
                 "content-type": 'application/json',
                 "accept": 'application/json'
             },
-            "body": buffer
+            "body": new Buffer('test')
         };
         var opt = {
             service: 'pulsapi',
-            scope: 'dl1_request',
-            solution: 'region',
-            accessKey: 'AKID',
-            secretKey: 'TEST'
+            accessKey: 'test',
+            secretKey: 'test'
         };
 
         var signer = new DLSigner(opt);
 
-        describe('Invalid payload', function () {
+        describe('Request not with byte payload', function () {
             it('Should throw Error', function () {
+                var requestWithInvalidPayload = {
+                    "method": "POST",
+                    "uri": '/test',
+                    "headers": {
+                        "host": 'test',
+                        "content-type": 'application/json',
+                        "accept": 'application/json'
+                    },
+                    "body": 'test'
+                };
                 expect(function () {
-                    signer.sign(invalidPayload)
+                    signer.sign(requestWithInvalidPayload)
                 }).to.throw();
             });
         });
-        describe('Valid payload', function () {
-            it('Should not throw Error', function () {
-                expect(function () {
-                    signer.sign(request)
-                }).not.to.throw();
-            });
-            it('Should return correct hash', function () {
-                var testHash = '9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08'.toLowerCase(); // 'test' sha256 hash
-                expect(signer._hash(request.body, true, true)).to.equal(testHash);
+        describe('Request with payload', function () {
+            it('Should return correct signature', function () {
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;x-dl-date,Signature=' +
+                    '0e45160526c02e432cf2b08988a4ae1341cc9a608da5efe330397f581bf32bc2';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
-        describe('Canonical Request', function () {
-            it('Returns correct canonical request when request body is provided', function () {
-                request.uri = '/examplebucket';
-                var headers = signer._copyHeaders(request['headers']);
-                var canonicalRequest = signer._prepareCanonicalRequest(
-                    request, signer._copyHeaders(headers),
-                    signer._prepareSignedHeaders(headers));
-                var correctValue = 'POST\n' +
-                    signer._uriEncode('/examplebucket', false) + '\n' +
-                    '\n' +
-                    'accept:application/json\n' +
-                    'content-type:application/json\n' +
-                    'host:test\n' +
-                    'x-dl-date:19700101T010000Z\n' +
-                    'accept;content-type;host;x-dl-date\n' +
-                    '9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08'.toLowerCase();
-                expect(canonicalRequest).to.equal(correctValue);
+        describe('Request with additional header', function () {
+            it('Should return correct signature', function () {
+                request.headers.test = 'test';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;test;x-dl-date,Signature=' +
+                    'f9bdf85e5226b3889098e799e65bd21cdbb22443893460c2ed050f8ca7b8dabb';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
+            });
+        });
+        describe('Request with whitespaces in header value', function () {
+            it('Should return the same signature as without them', function () {
+                request.headers.test = '    test  ';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
+                    'accept;content-type;host;test;x-dl-date,Signature=' +
+                    'f9bdf85e5226b3889098e799e65bd21cdbb22443893460c2ed050f8ca7b8dabb';
+                expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
     });
