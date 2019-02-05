@@ -104,10 +104,10 @@ DLSigner.prototype._prepareStringToSign = function (timeStamp, credentialsString
 DLSigner.prototype._prepareCanonicalHeaders = function (headers) {
     var res = '';
     var sortedHeaders = Object.keys(headers).sort();
-
+    var canHeader;
     for (var i = 0; i < sortedHeaders.length; i++) {
-        var can_header = sortedHeaders[i];
-        res += can_header + ':' + headers[sortedHeaders[i]].trim();
+        canHeader = sortedHeaders[i];
+        res += canHeader + ':' + headers[sortedHeaders[i]].trim();
         if (i !== sortedHeaders.length - 1) {
             res += '\n';
         }
