@@ -1,0 +1,24 @@
+{
+  "name": "ring-auth-node",
+  "version": "1.0.0",
+  "description": "Ring authorization library written in Node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha ./tests/*.spec.js"
+  },
+  "engines": {
+    "node": ">= 0.8.*"
+  },
+  "contributors": [
+    {
+      "name": "Karol Sowa",
+      "email": "karol.sowa@dreamlab.pl"
+    }
+  ],
+  "dependencies": {
+    "moment": "^2.23.0",
+    "crypto": "^1.0.1",
+    "chai": "^4.2.0",
+    "mocha": "2.5.3"
+  }
+}
