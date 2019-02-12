@@ -2,7 +2,6 @@ var crypto = require('crypto');
 var moment = require('moment');
 
 
-var REQUEST_EXPIRATION_TIME = 15; // in minutes
 var DEFAULT_SOLUTION = 'RING';
 var DEFAULT_REQUEST_SCOPE = 'dl1_request';
 var DEFAULT_ALGORITHM = 'DL-HMAC-SHA256';
@@ -179,13 +178,12 @@ DLSigner.prototype._prepareCanonicalRequest = function (request, headers, signed
 };
 
 /**
- * Checks if input date is outdated
+ * Checks if input date is valid
  * @param {string} dlDate - date to be checked
  * @returns boolean that determines if a dlDate is not valid
  */
-DLSigner.prototype.isOutdated = function (dlDate) {
-    var requestDateLimit = moment().clone(dlDate).subtract(REQUEST_EXPIRATION_TIME, 'minutes');
-    return moment(dlDate, 'YYYYMMDD[T]HHmmss[Z]').isBefore(requestDateLimit);
+DLSigner.prototype._isIncorrectDate = function (dlDate) {
+    return !moment(dlDate, 'YYYYMMDD[T]HHmmss[Z]', true).isValid();
 };
 
 /**
@@ -231,7 +229,7 @@ DLSigner.prototype._validateRequest = function (request, headers) {
     if (request.body && !Buffer.isBuffer(request.body)) {
         throw Error('Invalid payload!');
     }
-    if (this.isOutdated(headers['x-dl-date'])) {
+    if (this._isIncorrectDate(headers['x-dl-date'])) {
         throw Error('Invalid X-DL-Date header!');
     }
 };
