@@ -125,6 +125,26 @@ describe('RingAuthorization', function () {
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
+
+        describe('Invalid date', function () {
+            it('Should throw Error when date is a string', function () {
+                request.headers['X-DL-Date'] = 'incorrect date';
+                expect(function () {
+                    signer.sign(request)
+                }).to.throw();
+            });
+            it('Should throw Error when date is a not complete date', function () {
+                request.headers['X-DL-Date'] = '1990010';
+                expect(function () {
+                    signer.sign(request)
+                }).to.throw();
+            });
+            it('Should not throw any Error when date is a valid date', function () {
+                var correctDateString = '19900101T000000Z';
+                request.headers['X-DL-Date'] = correctDateString;
+                expect(signer.sign(request)['X-DL-Date']).to.equal(correctDateString);
+            });
+        });
     });
 
     describe('POST request', function () {
