@@ -50,7 +50,7 @@ describe('RingAuthorization', function () {
             it('Should return correct SHA256 hash for given request', function () {
                 var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;x-dl-date,Signature=' +
-                    '267247df1f154aefc4d27033245fa55cb8abb31f48a85ba55ebfaf82aec4a187';
+                    '449e1e282ecd448c5893759c274cbfaa857e41b3a48c4c992178fedb1aabc2d5';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -60,12 +60,12 @@ describe('RingAuthorization', function () {
 
                 var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;x-dl-date,Signature=' +
-                    'ca334d74f2c3b9cc0415b9383966ac1e3c18bd43d9941c5ecdfe272a90aec8f0';
+                    'b45ff133934c1cfc1cccb9e52fd57dec5b8860c2f3a2e84483b1f6ea119a004d';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
 
             it('Should return correct X-DL-Date header', function () {
-                var correctDate = '19700101T010000Z';
+                var correctDate = '19700101T000000Z';
                 expect(signer.sign(request)['X-DL-Date']).to.equal(correctDate);
             });
         });
@@ -75,7 +75,7 @@ describe('RingAuthorization', function () {
 
                 var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;x-dl-date,Signature=' +
-                    'ba2bc6a87afbff9e4fdcca768ce75e1c07808aaa45863c73387556f43473142f';
+                    '6d9fca6bb4ea9201a604101416c24cb8e859e20dbd3b236e6d154ca2749505db';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -86,7 +86,7 @@ describe('RingAuthorization', function () {
 
                 var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;x-dl-date,Signature=' +
-                    'ebfa4276ec80c405cf24d8c5b0816449309427a50cfbd3975a8894aea9d6fdbc';
+                    '84527c0c2a93dd9d997ff35858aa82470daa1ad654d9885cb48eafa1dd4d3944';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -97,7 +97,7 @@ describe('RingAuthorization', function () {
 
                 var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;x-dl-date,Signature=' +
-                    '9e5bc2455a134e86095e7fb631c57d84b2d6c7c8b3db3c0e9ecac96a9068af62';
+                    '9a6016743b2883e54cd8df0415b82098d3b895a1725e2b83c2733ff55cf965f3';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -108,7 +108,7 @@ describe('RingAuthorization', function () {
 
                 var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;x-dl-date,Signature=' +
-                    '2ce30a1edcc686c79b816189c653be1c980a850c04140cbdbde3d2572f62041a';
+                    'b96cf237a16906c356ed940e4bf17180d75709056950db7510db499947894e2e';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -121,7 +121,7 @@ describe('RingAuthorization', function () {
 
                 var correctHash = 'DL-HMAC-SHA512 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;x-dl-date,Signature=' +
-                    'bfcf0da0eaeb312f4d4164685996cdb319c57993700a9d0b398b3c5da4da40291e0a25a695752ba08b05019c6b24caec7e9862820bfca149a29be40ee2f4583f';
+                    '1019ea80dd07797359d0d67925c429cac0c9ae0be34640821f3e84b4ff931cae1370da3041e566f8d9c9c6d11ab9e817366bd05d3e1a680e041dd32390e0aaa3';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -187,7 +187,7 @@ describe('RingAuthorization', function () {
             it('Should return correct signature', function () {
                 var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;x-dl-date,Signature=' +
-                    '0e45160526c02e432cf2b08988a4ae1341cc9a608da5efe330397f581bf32bc2';
+                    'f58b69896948e8c4ad16870deeec536b7ebf8bf5a3bac45fb3a69aa76294c802';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -196,7 +196,7 @@ describe('RingAuthorization', function () {
                 request.headers.test = 'test';
                 var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;test;x-dl-date,Signature=' +
-                    'f9bdf85e5226b3889098e799e65bd21cdbb22443893460c2ed050f8ca7b8dabb';
+                    'aebb432375c15fe1c57fd4b82d755358a4c48dca050a3261fadbe37d61557e5e';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -205,7 +205,7 @@ describe('RingAuthorization', function () {
                 request.headers.test = '    test  ';
                 var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
                     'accept;content-type;host;test;x-dl-date,Signature=' +
-                    'f9bdf85e5226b3889098e799e65bd21cdbb22443893460c2ed050f8ca7b8dabb';
+                    'aebb432375c15fe1c57fd4b82d755358a4c48dca050a3261fadbe37d61557e5e';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });

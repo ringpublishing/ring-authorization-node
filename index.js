@@ -271,7 +271,7 @@ DLSigner.prototype._copyHeaders = function (headers) {
         copiedHeaders[headersFields[i].toLowerCase()] = headers[headersFields[i]];
     }
     if (!copiedHeaders['x-dl-date']) {
-        copiedHeaders['x-dl-date'] = moment().format('YYYYMMDD[T]HHmmss[Z]');
+        copiedHeaders['x-dl-date'] = moment().utc().format('YYYYMMDD[T]HHmmss[Z]');
     }
     return copiedHeaders;
 };
@@ -290,7 +290,7 @@ DLSigner.prototype.sign = function (request) {
 
     var canonicalRequest = this._prepareCanonicalRequest(request, copiedHeaders, signedHeaders);
 
-    var dateStamp = moment(copiedHeaders['x-dl-date'], 'YYYYMMDD[T]HHmmss[Z]').format('YYYYMMDD');
+    var dateStamp = moment(copiedHeaders['x-dl-date'], 'YYYYMMDD[T]HHmmss[Z]').utc().format('YYYYMMDD');
 
     var credentialsString = this._getCredentialString(dateStamp);
 
