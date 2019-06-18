@@ -3,9 +3,8 @@ var DLSigner = require('../ring-authorization-node').DLSigner;
 var options = {
     service: 'pulsapi',
     scope: 'dl1_request',
-    solution: 'region',
-    accessKey: 'AKID',
-    secretKey: 'SECRETKEY'
+    accessKey: 'accessKey',
+    secretKey: 'secretKey'
 };
 
 var request = {
@@ -24,7 +23,7 @@ var request2 = {
     'method': 'POST',
     'uri': '/resources',
     'headers': {
-        'Host': 'test',
+        'Host': 'api.ring.example.eu',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
     },
@@ -33,8 +32,8 @@ var request2 = {
 
 var signer = new DLSigner(options);
 
-var sign = signer.sign(request);
-var sign2 = signer.sign(request2);
+var signature = signer.sign(request);
+var signature2 = signer.sign(request2);
 
-console.log(sign);
-console.log(sign2);
+console.log(signature);
+console.log(signature2);
