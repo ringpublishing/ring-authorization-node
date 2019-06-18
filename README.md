@@ -7,7 +7,7 @@ For more information, please read [RING authorization docs](http://doc.dreamlab/
 
 When sending HTTP requests to RING, all requests must be signed so that RING can identify who sent them.
 In order to sign a request, you need to provide RING access key, RING secret key and the name of the service you make a
-request to. If you do not know what those properties are an how to get them, please contact someone from RING Publishing.
+request to. If you do not know what those properties are or how to get them, please contact someone from RING Publishing.
 
 ```js
 let DLSigner = require('../ring-authorization-node').DLSigner;
