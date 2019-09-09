@@ -290,7 +290,7 @@ DLSigner.prototype.sign = function (request) {
 
     var canonicalRequest = this._prepareCanonicalRequest(request, copiedHeaders, signedHeaders);
 
-    var dateStamp = moment(copiedHeaders['x-dl-date'], 'YYYYMMDD[T]HHmmss[Z]').utc().format('YYYYMMDD');
+    var dateStamp = moment(copiedHeaders['x-dl-date'], 'YYYYMMDD[T]HHmmss[Z]').format('YYYYMMDD');
 
     var credentialsString = this._getCredentialString(dateStamp);
 
