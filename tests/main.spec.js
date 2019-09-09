@@ -4,7 +4,7 @@ var DLSigner = require('../index').DLSigner;
 
 describe('RingAuthorization', function () {
     Date.now = function () {
-        return 0;
+        return 1462361249000;
     };
     Date.prototype.getTime = Date.now;
 
@@ -48,9 +48,8 @@ describe('RingAuthorization', function () {
 
         describe('Correct Authorization header for request without query string', function () {
             it('Should return correct SHA256 hash for given request', function () {
-                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;x-dl-date,Signature=' +
-                    '449e1e282ecd448c5893759c274cbfaa857e41b3a48c4c992178fedb1aabc2d5';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/20160504/RING/pulsapi/dl1_request,' +
+                    'SignedHeaders=accept;content-type;host;x-dl-date,Signature=7a0a9f2bd6c53fce7b57afafd33abf0a7afd37c829dc032d858a53697438e817';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -58,14 +57,13 @@ describe('RingAuthorization', function () {
             it('Should return correct SHA256 hash for given request', function () {
                 request.uri = '/examplebucket?prefix=somePrefix&marker=someMarker&max-keys=20';
 
-                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;x-dl-date,Signature=' +
-                    'b45ff133934c1cfc1cccb9e52fd57dec5b8860c2f3a2e84483b1f6ea119a004d';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/20160504/RING/pulsapi/dl1_request,' +
+                    'SignedHeaders=accept;content-type;host;x-dl-date,Signature=594d74f39110c9becb78cc3ed02ab443ad5056b913b0421fadb6767d73cadf66';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
 
             it('Should return correct X-DL-Date header', function () {
-                var correctDate = '19700101T000000Z';
+                var correctDate = '20160504T112729Z';
                 expect(signer.sign(request)['X-DL-Date']).to.equal(correctDate);
             });
         });
@@ -73,9 +71,8 @@ describe('RingAuthorization', function () {
             it('Should return correct SHA256 hash for given request', function () {
                 request.uri = '/test?Zzz&aaa&Aaa';
 
-                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;x-dl-date,Signature=' +
-                    '6d9fca6bb4ea9201a604101416c24cb8e859e20dbd3b236e6d154ca2749505db';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/20160504/RING/pulsapi/dl1_request,' +
+                    'SignedHeaders=accept;content-type;host;x-dl-date,Signature=61c559989f2e83bfab4a522f32bceb5fa51b9bc3f738d4c6cc7702de18887023';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -84,9 +81,8 @@ describe('RingAuthorization', function () {
             it('Should return correct SHA256 hash for given request', function () {
                 request.uri = '/test?Zzz&aaa=B&Aaa';
 
-                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;x-dl-date,Signature=' +
-                    '84527c0c2a93dd9d997ff35858aa82470daa1ad654d9885cb48eafa1dd4d3944';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/20160504/RING/pulsapi/dl1_request,' +
+                    'SignedHeaders=accept;content-type;host;x-dl-date,Signature=a062166eb9f75d0d6d36d9f20298385ca89b69a58bb686bb3a489eb762346956';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -95,9 +91,8 @@ describe('RingAuthorization', function () {
             it('Should return correct SHA256 hash for given request', function () {
                 request.uri = '/test/test2?Zzz&aaa=B&Aaa= aw';
 
-                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;x-dl-date,Signature=' +
-                    '9a6016743b2883e54cd8df0415b82098d3b895a1725e2b83c2733ff55cf965f3';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/20160504/RING/pulsapi/dl1_request,' +
+                    'SignedHeaders=accept;content-type;host;x-dl-date,Signature=4780cddf22ef264287e38c7625928fbbc2fe7d02d3616475f8a94e914784a38c';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -106,9 +101,8 @@ describe('RingAuthorization', function () {
             it('Should return correct SHA256 hash for given request', function () {
                 request.uri = '/test/test2?Zzz&aaa=B&Aaa= /aw';
 
-                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;x-dl-date,Signature=' +
-                    'b96cf237a16906c356ed940e4bf17180d75709056950db7510db499947894e2e';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/20160504/RING/pulsapi/dl1_request,' +
+                    'SignedHeaders=accept;content-type;host;x-dl-date,Signature=58077cf153f30c9b71459ca339b3f989f6ca4cc86e41e36627d7f46b0a01c7b1';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -119,9 +113,8 @@ describe('RingAuthorization', function () {
                 signer = new DLSigner(opt);
                 request.uri = '/test/test2?Zzz&aaa=B&Aaa= /aw.~~';
 
-                var correctHash = 'DL-HMAC-SHA512 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;x-dl-date,Signature=' +
-                    '1019ea80dd07797359d0d67925c429cac0c9ae0be34640821f3e84b4ff931cae1370da3041e566f8d9c9c6d11ab9e817366bd05d3e1a680e041dd32390e0aaa3';
+                var correctHash = 'DL-HMAC-SHA512 Credential=test/20160504/RING/pulsapi/dl1_request' +
+                    ',SignedHeaders=accept;content-type;host;x-dl-date,Signature=08f825823e9552835ec69eba84e278993c1af8a8f09c36f2a13a9e526b8c47f84a755ee3644f6ead247895386256425c34f98bf1ea4e897ad15dc995438ad60f';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
@@ -140,9 +133,16 @@ describe('RingAuthorization', function () {
                 }).to.throw();
             });
             it('Should not throw any Error when date is a valid date', function () {
-                var correctDateString = '19900101T000000Z';
+                request.headers['X-DL-Date'] = '20160504T000000Z';
+
+                var correctDateString = '20160504T000000Z';
+                var correctDateStamp = '20160504';
                 request.headers['X-DL-Date'] = correctDateString;
-                expect(signer.sign(request)['X-DL-Date']).to.equal(correctDateString);
+
+                var signedRequest = signer.sign(request);
+                expect(signedRequest['X-DL-Date']).to.equal(correctDateString);
+                var requestDatestamp = signedRequest['Authorization'].split('/')[1];
+                expect(requestDatestamp).to.equal(correctDateStamp);
             });
         });
     });
@@ -185,27 +185,24 @@ describe('RingAuthorization', function () {
         });
         describe('Request with payload', function () {
             it('Should return correct signature', function () {
-                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;x-dl-date,Signature=' +
-                    'f58b69896948e8c4ad16870deeec536b7ebf8bf5a3bac45fb3a69aa76294c802';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/20160504/RING/pulsapi/dl1_request,' +
+                    'SignedHeaders=accept;content-type;host;x-dl-date,Signature=40bb40619c065369991fb80afb64c2669fb3aeffe6a6da55c2d7b910934fddf9';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
         describe('Request with additional header', function () {
             it('Should return correct signature', function () {
                 request.headers.test = 'test';
-                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;test;x-dl-date,Signature=' +
-                    'aebb432375c15fe1c57fd4b82d755358a4c48dca050a3261fadbe37d61557e5e';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/20160504/RING/pulsapi/dl1_request,' +
+                    'SignedHeaders=accept;content-type;host;test;x-dl-date,Signature=2e16b5fcdb7a502ee5b3ea3471eb31cf29a58e4059a50c90f44761694614e3e6';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
         describe('Request with whitespaces in header value', function () {
             it('Should return the same signature as without them', function () {
                 request.headers.test = '    test  ';
-                var correctHash = 'DL-HMAC-SHA256 Credential=test/19700101/RING/pulsapi/dl1_request,SignedHeaders=' +
-                    'accept;content-type;host;test;x-dl-date,Signature=' +
-                    'aebb432375c15fe1c57fd4b82d755358a4c48dca050a3261fadbe37d61557e5e';
+                var correctHash = 'DL-HMAC-SHA256 Credential=test/20160504/RING/pulsapi/dl1_request,' +
+                    'SignedHeaders=accept;content-type;host;test;x-dl-date,Signature=2e16b5fcdb7a502ee5b3ea3471eb31cf29a58e4059a50c90f44761694614e3e6';
                 expect(signer.sign(request)['Authorization']).to.equal(correctHash);
             });
         });
